@@ -28,20 +28,23 @@
 
     {% if error %}
         <p class="error">{{ error }}</p>
-    {% elif results %}
-        <p>{{ results|length }} programme(s) found.</p>
-        <ul>
-        {% for result in results %}
-             <li>
-                <img src="{{ url_for('static', filename='thumbnails/' + result.pid + '.jpg') }}" alt="Thumbnail" onerror="this.style.display='none'"> {# Hide if image fails to load #}
-                <div class="details">
-                    <strong>{{ result.index }}: {{ result.name }}</strong>
-                    <span>{{ result.channel }}, PID: {{ result.pid }}</span>
-                </div>
-                <a href="{{ url_for('download', index=result.index) }}" class="button">Download</a>
-            </li>
+    {% elif grouped_results %}
+        {% for channel, results in grouped_results.items()|sort %}
+            <h2>{{ channel }}</h2>
+            <ul>
+            {% for result in results %}
+                 <li>
+                    <img src="{{ url_for('static', filename='thumbnails/' + result.pid + '.jpg') }}" alt="Thumbnail" onerror="this.style.display='none'"> {# Hide if image fails to load #}
+                    <div class="details">
+                        <strong>{{ result.index }}: {{ result.name }}</strong>
+                        {# Channel is already shown in the H2 heading #}
+                        <span>PID: {{ result.pid }}</span>
+                    </div>
+                    <a href="{{ url_for('download', index=result.index) }}" class="button">Download</a>
+                </li>
+            {% endfor %}
+            </ul>
         {% endfor %}
-        </ul>
     {% else %}
         <p>No programmes found in cache. Try refreshing manually via terminal.</p>
     {% endif %}

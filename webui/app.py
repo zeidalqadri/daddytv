@@ -159,7 +159,20 @@ def list_all():
         except Exception as e:
             print(f"Error during sorting: {e}") # Log error but proceed with unsorted/partially sorted list
 
-    return render_template('list.html', results=results, current_sort=sort_by)
+    # Group results by channel for better display
+    grouped_results = {}
+    if results:
+        # Ensure results are sorted primarily by channel if grouping
+        if sort_by != 'channel': # If sorting by index or name, sort by channel first for grouping
+             results.sort(key=lambda x: (x['channel'].lower(), x['name'].lower() if sort_by == 'name' else int(x['index'])))
+        
+        for result in results:
+            channel = result['channel']
+            if channel not in grouped_results:
+                grouped_results[channel] = []
+            grouped_results[channel].append(result)
+
+    return render_template('list.html', grouped_results=grouped_results, current_sort=sort_by)
 
 
 @app.route('/download/<index>')
