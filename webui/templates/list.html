@@ -36,7 +36,7 @@
                  <li>
                     <img src="{{ url_for('static', filename='thumbnails/' + result.pid + '.jpg') }}" alt="Thumbnail" onerror="this.style.display='none'"> {# Hide if image fails to load #}
                     <div class="details">
-                        <strong>{{ result.index }}: {{ result.name }}</strong>
+                        <strong>{{ result.name }}</strong> {# Removed index and colon #}
                         {# Channel is already shown in the H2 heading #}
                         <span>PID: {{ result.pid }}</span>
                     </div>

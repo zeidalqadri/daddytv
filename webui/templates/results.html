@@ -25,12 +25,12 @@
         <ul>
         {% for result in results %}
             <li>
-                <img src="{{ url_for('static', filename='thumbnails/' + result.pid + '.jpg') }}" alt="Thumbnail" onerror="this.style.display='none'"> {# Hide if image fails to load #}
-                <div class="details">
-                    <strong>{{ result.index }}: {{ result.name }}</strong>
-                    <span>{{ result.channel }}, PID: {{ result.pid }}</span>
-                </div>
-                <a href="{{ url_for('download', index=result.index) }}" class="button">Download</a>
+                 <img src="{{ url_for('static', filename='thumbnails/' + result.pid + '.jpg') }}" alt="Thumbnail" onerror="this.style.display='none'"> {# Hide if image fails to load #}
+                 <div class="details">
+                     <strong>{{ result.name }}</strong> {# Removed index and colon #}
+                     <span>{{ result.channel }}, PID: {{ result.pid }}</span>
+                 </div>
+                 <a href="{{ url_for('download', index=result.index) }}" class="button">Download</a>
             </li>
         {% endfor %}
         </ul>
