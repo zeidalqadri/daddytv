@@ -94,8 +94,23 @@ def _parse_get_iplayer_output(output):
                 'pid': pid
             })
 
+            # --- Auto-download thumbnail if missing ---
+            if pid and index: # Ensure we have both PID and Index
+                thumb_filename = f"{pid}.jpg"
+                thumb_path = os.path.join(THUMBNAIL_DIR, thumb_filename)
+                if not os.path.exists(thumb_path):
+                    try:
+                        thumb_cmd = [GET_IPLAYER_SCRIPT, '--get', index, '--thumbnail', '--output', THUMBNAIL_DIR, f'--file-prefix={pid}']
+                        print(f"Attempting background thumbnail download: {' '.join(thumb_cmd)}") # Debugging
+                        # Run in background, hide output
+                        subprocess.Popen(thumb_cmd, cwd=GET_IPLAYER_SOURCE_DIR,
+                                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    except Exception as thumb_e:
+                        print(f"Error starting background thumbnail download for {pid}: {thumb_e}") # Debugging
+            # --- End auto-download ---
+
     # Add basic logging to see what was parsed
-    # print(f"Parsed {len(results)} results.") 
+    # print(f"Parsed {len(results)} results.")
     # if not results and output:
     #     print(f"Failed to parse output:\n{output[:500]}")
 
