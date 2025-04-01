@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+
+# Build artifacts
+build/
+*.spec
+
+# Cloned source (manage separately if needed)
+get_iplayer_source/
+
+# Bundled get_iplayer (embedded repo, likely outdated)
+get_iplayer/
+
+# Local Perl library (if created within project)
+# perl5/
+
+# Cache/config for get_iplayer (if created within project)
+# .get_iplayer/
