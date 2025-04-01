@@ -81,34 +81,6 @@ if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 }
 Write-Host "Running with Administrator privileges." -ForegroundColor Green
 
-# --- Function to Check/Install Chocolatey ---
-function Ensure-Chocolatey {
-    Write-Host "`n--- Checking for Chocolatey Package Manager ---"
-    if (-not (Test-CommandExists "choco")) {
-        Write-Warning "Chocolatey package manager not found. It can help automate Git and Perl installation."
-        $installChoco = Read-Host "Attempt to install Chocolatey automatically? (Requires internet connection) (y/n)"
-        if ($installChoco -eq 'y') {
-            Write-Host "Installing Chocolatey..."
-            try {
-                Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-                Write-Host "Chocolatey installation attempted. Please close and re-open this PowerShell window AS ADMINISTRATOR, then re-run the setup script." -ForegroundColor Yellow
-                Read-Host "Press Enter to exit..."
-                exit 0 # Exit so user can restart with Choco in PATH
-            } catch {
-                Write-Error "Chocolatey installation failed: $_"
-                Write-Warning "Proceeding without Chocolatey. Manual installation of Git/Perl may be required."
-                return $false
-            }
-        } else {
-            Write-Warning "Proceeding without Chocolatey. Manual installation of Git/Perl may be required."
-            return $false
-        }
-    } else {
-        Write-Host "Chocolatey found." -ForegroundColor Green
-        return $true
-    }
-}
-
 # 2. Welcome
 Write-Host "-------------------------------------" -ForegroundColor Yellow
 Write-Host " get_iplayer Automated Setup for Windows " -ForegroundColor Yellow
@@ -131,45 +103,20 @@ if (-not (Test-Path $InstallBaseDir)) {
     }
 }
 
-# 4. Ensure Chocolatey (Optional but helpful)
-$ChocoAvailable = Ensure-Chocolatey
-
-# 5. Check/Install Git
+# 4. Check for Git (Manual Install Required)
 Write-Host "`n--- Checking for Git ---"
 if (-not (Test-CommandExists "git")) {
-    Write-Warning "Git is not found."
-    if ($ChocoAvailable) {
-        $confirmGitInstall = Read-Host "Attempt to install Git using Chocolatey? (y/n)"
-        if ($confirmGitInstall -eq 'y') {
-            Write-Host "Installing Git via Chocolatey..."
-            try {
-                choco install git -y --force --acceptlicense
-                # Update PATH for current session if needed
-                $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-            } catch {
-                 Write-Error "Chocolatey Git installation failed: $_"
-                 Write-Warning "Please install Git manually from https://git-scm.com/download/win and ensure it's in PATH."
-                 Read-Host "Press Enter after manual installation..."
-            }
-        } else {
-             Write-Warning "Please install Git manually from https://git-scm.com/download/win and ensure it's in PATH."
-             Read-Host "Press Enter after manual installation..."
-        }
-    } else {
-        Write-Host "Please download and install Git for Windows from: https://git-scm.com/download/win"
-        Write-Host "Ensure you allow Git to be added to the PATH during installation."
-        Read-Host "Press Enter after you have installed Git..."
-    }
-    # Re-check after potential install
-    if (-not (Test-CommandExists "git")) {
-        Write-Error "Git still not found. Please install Git and ensure it's in your PATH, then re-run this script."
-        Read-Host "Press Enter to exit..."
-        exit 1
-    }
+    Write-Error "Git is not found in your PATH."
+    Write-Host "Git is required to download the latest get_iplayer code."
+    Write-Host "Please download and install Git for Windows from: https://git-scm.com/download/win"
+    Write-Host "During installation, ensure you select an option that adds Git to the PATH (usually the default)."
+    Write-Error "Re-run this script after Git has been successfully installed."
+    Read-Host "Press Enter to exit..."
+    exit 1
 }
 Write-Host "Git found." -ForegroundColor Green
 
-# 6. Check/Install Strawberry Perl
+# 5. Check for Strawberry Perl (Manual Install Required)
 Write-Host "`n--- Checking for Strawberry Perl ---"
 $PerlPath = Get-Command perl -ErrorAction SilentlyContinue
 $IsStrawberryPerl = $false
@@ -191,47 +138,18 @@ if ($PerlPath) {
 }
 
 if (-not $IsStrawberryPerl) {
-    Write-Warning "Strawberry Perl is not found."
-    if ($ChocoAvailable) {
-         $confirmPerlInstall = Read-Host "Attempt to install Strawberry Perl using Chocolatey? (y/n)"
-         if ($confirmPerlInstall -eq 'y') {
-             Write-Host "Installing Strawberry Perl via Chocolatey... This may take some time."
-             try {
-                 choco install strawberryperl -y --force --acceptlicense
-                 # Update PATH for current session if needed
-                 $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-                 # Find Perl path after install
-                 $PerlPath = Get-Command perl -ErrorAction SilentlyContinue
-             } catch {
-                 Write-Error "Chocolatey Strawberry Perl installation failed: $_"
-                 Write-Warning "Please install Strawberry Perl manually from https://strawberryperl.com/ and ensure it's in PATH."
-                 Read-Host "Press Enter after manual installation..."
-                 $PerlPath = Get-Command perl -ErrorAction SilentlyContinue
-             }
-         } else {
-              Write-Warning "Please install Strawberry Perl manually from https://strawberryperl.com/ and ensure it's in PATH."
-              Read-Host "Press Enter after manual installation..."
-              $PerlPath = Get-Command perl -ErrorAction SilentlyContinue
-         }
-    } else {
-        Write-Host "Strawberry Perl is required to run get_iplayer and install modules easily."
-        Write-Host "Please download and install the latest 64-bit version from: https://strawberryperl.com/"
-        Read-Host "Press Enter after you have installed Strawberry Perl..."
-        $PerlPath = Get-Command perl -ErrorAction SilentlyContinue
-    }
-
-    # Re-check after potential install
-    if (-not $PerlPath) {
-        Write-Error "Perl still not found. Please install Strawberry Perl and ensure it's added to your PATH, then re-run this script."
-        Read-Host "Press Enter to exit..."
-        exit 1
-    }
-     Write-Host "Found Perl at: $($PerlPath.Source)"
+    Write-Error "Strawberry Perl is not found or not accessible in PATH."
+    Write-Host "Strawberry Perl is required to run get_iplayer and install modules."
+    Write-Host "Please download and install the latest 64-bit version from: https://strawberryperl.com/"
+    Write-Host "Ensure it's added to the system PATH during installation."
+    Write-Error "Re-run this script after Strawberry Perl has been successfully installed."
+    Read-Host "Press Enter to exit..."
+    exit 1
 }
-Write-Host "Perl check complete." -ForegroundColor Green
+Write-Host "Strawberry Perl found." -ForegroundColor Green
 $PerlExePath = $PerlPath.Source
 
-# 7. Check/Download ffmpeg
+# 6. Check/Download ffmpeg
 Write-Host "`n--- Checking for ffmpeg ---"
 if (-not (Test-Path $FfmpegExePath) -and -not (Test-CommandExists "ffmpeg")) {
     Write-Warning "ffmpeg not found."
@@ -283,7 +201,7 @@ if (-not (Test-Path $FfmpegExePath) -and -not (Test-CommandExists "ffmpeg")) {
      }
 }
 
-# 8. Clone/Update get_iplayer Source Code
+# 7. Clone/Update get_iplayer Source Code
 Write-Host "`n--- Getting get_iplayer Source Code ---"
 if (-not (Test-Path $GetIplayerDir)) {
     Write-Host "Cloning get_iplayer repository into $GetIplayerDir..."
@@ -336,48 +254,78 @@ if (-not (Test-Path $GetIplayerScript -PathType Leaf)) {
      exit 1
 }
 
-# 9. Install/Update Perl Modules
+# 8. Install/Update Perl Modules
 Write-Host "`n--- Installing/Updating Perl Modules ---"
 Write-Host "This may take several minutes..."
+$LogFile = Join-Path $InstallBaseDir "perl_module_install.log"
+Write-Host "Installation progress and errors will be logged to: $LogFile"
 # Ensure cpanm is installed
 Write-Host "Checking/Installing cpanm..."
+$CpanmInstalled = $false
 try {
-    & $PerlExePath -MCPAN -e "CPAN::Shell->install('App::cpanminus')"
+    # Run cpan command to install cpanm, redirect output to log
+    & $PerlExePath -MCPAN -e "CPAN::Shell->install('App::cpanminus')" *>> $LogFile
     # Find cpanm executable (might be in Strawberry Perl's bin or site/bin)
     $CpanmPath = Get-Command cpanm -ErrorAction SilentlyContinue
     if (-not $CpanmPath) {
         # Try common Strawberry Perl paths
         $PossibleCpanmPaths = @(
-             Join-Path (Split-Path $PerlExePath -Parent) "cpanm.bat"
-             Join-Path (Split-Path $PerlExePath -Parent | Split-Path -Parent) "cpanm" # Might be just 'cpanm'
-             Join-Path (Split-Path $PerlExePath -Parent | Split-Path -Parent) "site\bin\cpanm"
+             Join-Path (Split-Path $PerlExePath -Parent) "cpanm.bat" # e.g., C:\Strawberry\perl\bin\cpanm.bat
+             Join-Path (Split-Path $PerlExePath -Parent | Split-Path -Parent) "c\bin\cpanm.bat" # Sometimes in C:\Strawberry\c\bin
+             Join-Path (Split-Path $PerlExePath -Parent | Split-Path -Parent) "perl\site\bin\cpanm"
+             Join-Path (Split-Path $PerlExePath -Parent | Split-Path -Parent) "perl\site\bin\cpanm.bat"
         )
         $CpanmPath = $PossibleCpanmPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
 
         if (-not $CpanmPath) {
-             Write-Error "Could not find cpanm executable after installation attempt."
+             Write-Error "Could not find cpanm executable after installation attempt. Check $LogFile for details."
              Read-Host "Press Enter to exit..."
              exit 1
         }
          Write-Host "Found cpanm at $CpanmPath"
+         $CpanmInstalled = $true
     } else {
          $CpanmPath = $CpanmPath.Source
+         $CpanmInstalled = $true
     }
-
-    Write-Host "Installing required modules using cpanm..."
-    foreach ($module in $PerlModules) {
-        Write-Host "Installing $module..."
-        & $CpanmPath $module
-        # Basic check - Add more robust checks if needed
-        # & $PerlExePath -M$module -e "print qq(OK\n)"
-    }
-    Write-Host "Perl module installation complete." -ForegroundColor Green
 } catch {
-    Write-Error "An error occurred during Perl module installation: $_"
-     Write-Warning "Some modules might be missing. get_iplayer might not function correctly."
+     Write-Error "Failed to install cpanm. Check $LogFile for details. Error: $_"
+     Read-Host "Press Enter to exit..."
+     exit 1
 }
 
-# 10. Get & Verify Google Drive Path
+if ($CpanmInstalled) {
+    Write-Host "Installing required modules using cpanm (logging to $LogFile)..."
+    $AllModulesOk = $true
+    foreach ($module in $PerlModules) {
+        Write-Host "Attempting to install $module..."
+        try {
+            # Use Start-Process to better capture streams and check exit code
+            $process = Start-Process -FilePath $CpanmPath -ArgumentList "--verbose", $module -Wait -PassThru -RedirectStandardOutput $LogFile -Append -RedirectStandardError $LogFile -Append
+            if ($process.ExitCode -ne 0) {
+                Write-Error "Failed to install module '$module'. Exit code: $($process.ExitCode)."
+                $AllModulesOk = $false
+            } else {
+                 Write-Host "'$module' installation successful or already up-to-date." -ForegroundColor Green
+            }
+        } catch {
+             Write-Error "Error occurred running cpanm for '$module': $_"
+             $AllModulesOk = $false
+        }
+    }
+
+    if (-not $AllModulesOk) {
+        Write-Error "One or more required Perl modules failed to install."
+        Write-Error "Please check the log file for details: $LogFile"
+        Write-Error "You may need to resolve dependencies or install build tools (like dmake via 'gmake' in Strawberry Perl) manually."
+        Read-Host "Press Enter to exit..."
+        exit 1
+    } else {
+        Write-Host "All required Perl modules installed successfully." -ForegroundColor Green
+    }
+}
+
+# 9. Get & Verify Google Drive Path
 Write-Host "`n--- Configure Download Destination ---"
 $GDrivePath = ""
 while (-not (Test-Path $GDrivePath -PathType Container)) {
@@ -389,7 +337,7 @@ while (-not (Test-Path $GDrivePath -PathType Container)) {
      }
 }
 
-# 11. Configure get_iplayer Preferences
+# 10. Configure get_iplayer Preferences
 Write-Host "`n--- Configuring get_iplayer ---"
 try {
     Write-Host "Setting default output directory..."
@@ -403,7 +351,7 @@ try {
      Write-Error "Failed to set get_iplayer preferences: $_"
 }
 
-# 12. Configure PVR List (Shows to Download)
+# 11. Configure PVR List (Shows to Download)
 Write-Host "`n--- Configure Shows for Automatic Download (PVR List) ---"
 $AddMoreShows = 'y'
 while ($AddMoreShows -eq 'y') {
@@ -421,7 +369,7 @@ while ($AddMoreShows -eq 'y') {
      }
 }
 
-# 13. Create the run_downloads.ps1 Script
+# 12. Create the run_downloads.ps1 Script
 Write-Host "`n--- Creating Helper Script for Downloads ---"
 $RunScriptContent = @"
 # This script runs the get_iplayer PVR download process.
@@ -447,7 +395,7 @@ try {
 }
 
 
-# 14. Create Scheduled Task
+# 13. Create Scheduled Task
 Write-Host "`n--- Creating Scheduled Task for Automatic Downloads ---"
 $TaskAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -File `"$RunDownloadsScriptPath`""
 # Run daily at 3:00 AM
@@ -466,7 +414,7 @@ try {
      Write-Warning "Automatic downloads will not run. You can run downloads manually using the helper script."
 }
 
-# 15. Create Desktop Shortcuts (Optional)
+# 14. Create Desktop Shortcuts (Optional)
 Write-Host "`n--- Creating Desktop Shortcuts (Optional) ---"
 $CreateShortcuts = Read-Host "Create shortcuts on the Desktop to run setup again and trigger downloads manually? (y/n)"
 if ($CreateShortcuts -eq 'y') {
@@ -527,7 +475,7 @@ function Get-PrimaryIPv4Address {
     }
 }
 
-# 16. Final Instructions
+# 15. Final Instructions
 Write-Host "`n--- Finding Current Local IP Address ---"
 $CurrentIP = Get-PrimaryIPv4Address
 if ($CurrentIP) {
@@ -542,7 +490,8 @@ if ($CurrentIP) {
 
 Write-Host "`n--- Setup Complete! ---" -ForegroundColor Green
 Write-Host "Summary:"
-Write-Host "- Dependencies checked/installed (Perl, Git, ffmpeg)."
+Write-Host "- Dependencies checked (Perl, Git) - Manual installation required if missing."
+Write-Host "- ffmpeg checked/downloaded."
 Write-Host "- get_iplayer source code is in: $GetIplayerDir"
 Write-Host "- Downloads will be saved to: $GDrivePath"
 Write-Host "- Automatic downloads scheduled daily at 3:00 AM via Task Scheduler ($ScheduledTaskName)."
