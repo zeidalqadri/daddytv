@@ -286,32 +286,52 @@ if (-not (Test-Path $FfmpegExePath) -and -not (Test-CommandExists "ffmpeg")) {
 # 8. Clone/Update get_iplayer Source Code
 Write-Host "`n--- Getting get_iplayer Source Code ---"
 if (-not (Test-Path $GetIplayerDir)) {
-    Write-Host "Cloning get_iplayer repository..."
+    Write-Host "Cloning get_iplayer repository into $GetIplayerDir..."
     try {
-        git clone https://github.com/get-iplayer/get_iplayer.git $GetIplayerDir -ErrorAction Stop
-        Write-Host "Repository cloned." -ForegroundColor Green
+        # Run git clone and capture output/errors
+        $cloneResult = git clone https://github.com/get-iplayer/get_iplayer.git $GetIplayerDir 2>&1
+        # Check exit code AND if the directory was actually created
+        if ($LASTEXITCODE -ne 0 -or -not (Test-Path $GetIplayerDir -PathType Container)) {
+            Write-Error "Failed to clone get_iplayer repository. Please check network connection and permissions for C:\Tools."
+            Write-Error "Git output (if any): $cloneResult"
+            # Throw an exception to be caught by the outer catch block is cleaner, but for simplicity let's exit here
+            Read-Host "Press Enter to exit..."
+            exit 1
+        }
+        Write-Host "Repository cloned successfully." -ForegroundColor Green
     } catch {
-        Write-Error "Failed to clone get_iplayer repository. Error: $_"
+        # This catch might not be reached if git clone fails but doesn't throw terminating error
+        Write-Error "An unexpected error occurred during git clone: $_"
         Read-Host "Press Enter to exit..."
         exit 1
     }
 } else {
-    Write-Host "Updating existing get_iplayer repository..."
+    Write-Host "Updating existing get_iplayer repository in $GetIplayerDir..."
     try {
         Push-Location $GetIplayerDir
-        git pull -ErrorAction Stop
+        # Run git pull and capture output/errors
+        $pullResult = git pull 2>&1
+        if ($LASTEXITCODE -ne 0) {
+             Write-Warning "git pull command failed. Git output (if any): $pullResult"
+             # Don't necessarily exit, but warn the user we might be using old code
+             Write-Warning "Continuing with potentially outdated local code."
+        } else {
+             Write-Host "Repository updated successfully." -ForegroundColor Green
+        }
         Pop-Location
-        Write-Host "Repository updated." -ForegroundColor Green
     } catch {
-        Pop-Location
+        Pop-Location # Ensure we pop location even if git pull fails catastrophically
         Write-Error "Failed to update get_iplayer repository. Error: $_"
-        # Continue with existing code, but warn user
         Write-Warning "Continuing with potentially outdated local code."
     }
 }
+# Verify the script file exists AFTER clone/update attempt
 $GetIplayerScript = Join-Path $GetIplayerDir "get_iplayer"
-if (-not (Test-Path $GetIplayerScript)) {
-     Write-Error "Failed to find get_iplayer script at $GetIplayerScript after clone/update."
+# Check it's specifically a file (Leaf)
+if (-not (Test-Path $GetIplayerScript -PathType Leaf)) {
+     Write-Error "Failed to find the main get_iplayer script file at '$GetIplayerScript' after clone/update."
+     Write-Error "The clone or update might have failed silently, or the repository structure may have changed."
+     Write-Error "Please check the contents of '$GetIplayerDir' manually."
      Read-Host "Press Enter to exit..."
      exit 1
 }
